@@ -286,6 +286,31 @@ app.get('/api/verification/status', async (req, res) => {
     }
 });
 
+// Initialize verification (called on page load - starts the timer)
+app.post('/api/verification/init', async (req, res) => {
+    try {
+        const { hwid } = req.body;
+        if (!hwid) return res.json({ success: false });
+
+        let verification = await PendingVerification.findOne({ hwid });
+
+        if (!verification) {
+            verification = new PendingVerification({
+                hwid,
+                token: generateKey('TKN'),
+                type: 'linkvertise',
+                ip: req.ip,
+                ytStartedAt: new Date()
+            });
+            await verification.save();
+        }
+
+        return res.json({ success: true });
+    } catch (err) {
+        return res.json({ success: false });
+    }
+});
+
 // Start checkpoint verification
 app.post('/api/verification/start-checkpoint', async (req, res) => {
     try {
@@ -345,12 +370,11 @@ app.post('/api/verification/verify-youtube', async (req, res) => {
         let verification = await PendingVerification.findOne({ hwid });
 
         if (!verification) {
-            verification = new PendingVerification({
-                hwid,
-                token: generateKey('TKN'),
-                type: 'linkvertise',
-                ip: req.ip
-            });
+            return res.json({ success: false, message: 'Please reload the page and try again' });
+        }
+
+        if (verification.ytCompleted) {
+            return res.json({ success: true });
         }
 
         // Anti-abuse: require at least 8 seconds since page load

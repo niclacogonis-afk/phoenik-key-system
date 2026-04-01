@@ -249,6 +249,15 @@
         async function init() {
             browserHWID = await generateHWID();
 
+            // Create verification record immediately (starts the timer)
+            try {
+                await fetch(`${API_URL}/api/verification/init`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hwid: browserHWID })
+                });
+            } catch (e) {}
+
             // Check if already verified
             try {
                 const res = await fetch(`${API_URL}/api/verification/status?hwid=${browserHWID}`);
