@@ -274,16 +274,34 @@ function generateKey(prefix = 'PHOENIK') {
     return `${prefix}-${segment()}-${segment()}-${segment()}`;
 }
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', mongo: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
+});
+
+app.get('/', (req, res) => {
+    res.json({ name: 'Phoenik Key System', version: '1.0.0' });
+});
+
 // === CONNECT DB & START ===
-mongoose.connect(MONGO_URI)
-    .then(() => {
-        console.log('MongoDB connected');
-        app.listen(PORT, () => {
-            console.log(`Phoenik Key System running on port ${PORT}`);
-            console.log(`Admin panel: http://localhost:${PORT}/admin.html`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Phoenik Key System running on port ${PORT}`);
+    console.log(`Admin panel: http://localhost:${PORT}/admin.html`);
+
+    // Connect to MongoDB after server starts
+    mongoose.connect(MONGO_URI)
+        .then(() => console.log('MongoDB connected'))
+        .catch(err => {
+            console.error('MongoDB connection error:', err.message);
+            console.log('Server running without DB. Retrying connection...');
+            // Retry connection every 10 seconds
+            const retryInterval = setInterval(() => {
+                mongoose.connect(MONGO_URI)
+                    .then(() => {
+                        console.log('MongoDB connected on retry');
+                        clearInterval(retryInterval);
+                    })
+                    .catch(e => console.error('MongoDB retry failed:', e.message));
+            }, 10000);
         });
-    })
-    .catch(err => {
-        console.error('MongoDB connection error:', err.message);
-        process.exit(1);
-    });
+});
