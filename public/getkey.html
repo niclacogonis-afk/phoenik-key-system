@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenik Executor - Get Key</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Inter, sans-serif;
+            background: #050507;
+            color: #E5E7EB;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+        .step-container { margin-bottom: 30px; }
+        .step {
+            background: #0F0F15;
+            border: 1px solid #1E1E26;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 16px;
+            text-align: left;
+            transition: all 0.3s;
+        }
+        .step.completed { border-color: #00ff88; }
+        .step.active { border-color: #FF3B3B; }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .step-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #1a1a24;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #666;
+        }
+        .step.completed .step-number { background: #0D3322; color: #00ff88; }
+        .step.active .step-number { background: #331515; color: #FF3B3B; }
+        .step-title { color: #fff; font-size: 15px; font-weight: 600; }
+        .step-desc { color: #666; font-size: 12px; margin-left: 40px; }
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .btn-primary { background: #FF3B3B; color: #fff; }
+        .btn-primary:hover { background: #e03030; }
+        .btn-success { background: #00ff88; color: #050507; }
+        .btn-success:hover { background: #00e07a; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .key-display {
+            background: #0A0A0E;
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Consolas', monospace;
+            font-size: 18px;
+            color: #00ff88;
+            letter-spacing: 2px;
+            word-break: break-all;
+            display: none;
+        }
+        .copy-btn {
+            margin-top: 12px;
+            background: transparent;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .copy-btn:hover { background: #0D3322; }
+        .error { color: #FF4B4B; font-size: 13px; margin-top: 10px; }
+        .timer { color: #666; font-size: 12px; margin-top: 8px; }
+        .checkmark { color: #00ff88; }
+        .linkvertise-btn, .lootlabs-btn {
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .linkvertise-btn { background: #f5a623; color: #000; }
+        .lootlabs-btn { background: #7c3aed; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">PHOENIK</div>
+        <div class="subtitle">Complete all steps to get your free 24h key</div>
+
+        <div class="step-container">
+            <div class="step active" id="step1">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Like our YouTube video</div>
+                </div>
+                <div class="step-desc">Subscribe and like our latest video to support the project</div>
+                <a href="https://www.youtube.com/@PhoenikExecutor?sub_confirmation=1" target="_blank" class="btn btn-primary" style="margin-left:40px" onclick="completeStep(1)">
+                    Open YouTube
+                </a>
+            </div>
+
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Complete checkpoint</div>
+                </div>
+                <div class="step-desc">Choose one of the following to continue</div>
+                <div style="margin-left:40px;margin-top:8px">
+                    <a href="https://linkvertise.com" target="_blank" class="btn linkvertise-btn" onclick="completeStep(2)">
+                        Linkvertise
+                    </a>
+                    <a href="https://lootlabs.com" target="_blank" class="btn lootlabs-btn" onclick="completeStep(2)">
+                        LootLabs
+                    </a>
+                </div>
+            </div>
+
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Verify & Get Key</div>
+                </div>
+                <div class="step-desc">Click verify to prove you completed all steps</div>
+                <button class="btn btn-success" style="margin-left:40px" id="verifyBtn" disabled onclick="verifyAndGetKey()">
+                    Verify & Get Key
+                </button>
+            </div>
+        </div>
+
+        <div class="key-display" id="keyDisplay">
+            <div id="keyCode"></div>
+            <button class="copy-btn" onclick="copyKey()">Copy Key</button>
+            <div class="timer">Key expires in 24 hours</div>
+        </div>
+
+        <div class="error" id="errorMsg"></div>
+    </div>
+
+    <script>
+        let completedSteps = new Set();
+        const API_URL = window.location.origin;
+
+        function completeStep(num) {
+            completedSteps.add(num);
+            document.getElementById('step' + num).classList.remove('active');
+            document.getElementById('step' + num).classList.add('completed');
+
+            // Activate next step
+            if (num < 3) {
+                document.getElementById('step' + (num + 1)).classList.add('active');
+            }
+
+            // Enable verify button if all steps done
+            if (completedSteps.size >= 2) { // step 1 + step 2
+                document.getElementById('verifyBtn').disabled = false;
+            }
+        }
+
+        async function verifyAndGetKey() {
+            const btn = document.getElementById('verifyBtn');
+            btn.textContent = 'Generating...';
+            btn.disabled = true;
+
+            // In production, you would generate a key server-side
+            // For now, show a message to use the executor
+            setTimeout(() => {
+                document.getElementById('keyDisplay').style.display = 'block';
+                document.getElementById('keyCode').textContent = 'Use the executor to validate your key. Paste it in the key system.';
+                btn.textContent = 'Done!';
+            }, 1500);
+        }
+
+        function copyKey() {
+            const text = document.getElementById('keyCode').textContent;
+            navigator.clipboard.writeText(text);
+            document.querySelector('.copy-btn').textContent = 'Copied!';
+            setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy Key', 2000);
+        }
+    </script>
+</body>
+</html>
