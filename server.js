@@ -10,7 +10,7 @@ const app = express();
 
 // === CONFIG ===
 const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://niclacogonis_db_user:Pia201207mongosh@phoenikkeysystem.scfeitw.mongodb.net/phoenikkeys?retryWrites=true&w=majority';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://niclacogonis_db_user:Pia201207mongosh@phoenikkeysystem.scfeitw.mongodb.net/phoenikkeys?retryWrites=true&w=majority&appName=PhoenikKeysystem';
 const JWT_SECRET = process.env.JWT_SECRET || 'ANG20p1207n!';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'N201207p';
 
