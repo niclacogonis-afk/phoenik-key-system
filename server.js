@@ -284,24 +284,32 @@ app.get('/', (req, res) => {
 });
 
 // === CONNECT DB & START ===
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err.message);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err?.message || err);
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Phoenik Key System running on port ${PORT}`);
     console.log(`Admin panel: http://localhost:${PORT}/admin.html`);
 
     // Connect to MongoDB after server starts
-    mongoose.connect(MONGO_URI)
+    mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000 })
         .then(() => console.log('MongoDB connected'))
         .catch(err => {
             console.error('MongoDB connection error:', err.message);
             console.log('Server running without DB. Retrying connection...');
-            // Retry connection every 10 seconds
+            // Retry connection every 15 seconds
             const retryInterval = setInterval(() => {
-                mongoose.connect(MONGO_URI)
+                mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000 })
                     .then(() => {
                         console.log('MongoDB connected on retry');
                         clearInterval(retryInterval);
                     })
                     .catch(e => console.error('MongoDB retry failed:', e.message));
-            }, 10000);
+            }, 15000);
         });
 });
