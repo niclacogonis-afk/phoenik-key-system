@@ -181,13 +181,16 @@
             </div>
             <div class="step-desc">Complete one of the following to continue</div>
             <div style="margin-top:8px">
-                <a href="#" target="_blank" class="btn btn-primary" id="linkvertiseBtn" onclick="startCheckpoint('linkvertise')">
+                <a href="https://linkvertise.com/access/4743639/mtHXHs6YNOhN" target="_blank" class="btn btn-primary" id="linkvertiseBtn">
                     Linkvertise
                 </a>
-                <a href="#" target="_blank" class="btn btn-lootlabs" id="lootlabsBtn" onclick="startCheckpoint('lootlabs')">
+                <a href="https://lootdest.org/s?pAOGB5Mu" target="_blank" class="btn btn-lootlabs" id="lootlabsBtn">
                     LootLabs
                 </a>
             </div>
+            <button class="btn btn-primary" id="cpVerifyBtn" onclick="verifyCheckpoint()" style="display:none;margin-left:40px;margin-top:8px">
+                I Completed - Verify
+            </button>
             <div class="step-desc" id="cpStatus" style="margin-top:6px"></div>
         </div>
 
@@ -301,6 +304,39 @@
             document.getElementById('statusBar').innerHTML = checks.join(' &nbsp;&nbsp; ');
         }
 
+        // Verify checkpoint
+        async function verifyCheckpoint() {
+            const btn = document.getElementById('cpVerifyBtn');
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/api/verification/verify-checkpoint`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hwid: browserHWID })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    cpVerified = true;
+                    markStepComplete(2);
+                    activateStep(3);
+                    updateStatus();
+                } else {
+                    btn.textContent = 'I Completed - Verify';
+                    btn.disabled = false;
+                    document.getElementById('cpStatus').textContent = data.message || 'Verification failed';
+                    document.getElementById('cpStatus').style.color = '#FF4B4B';
+                }
+            } catch (e) {
+                btn.textContent = 'I Completed - Verify';
+                btn.disabled = false;
+                document.getElementById('cpStatus').textContent = 'Connection error';
+                document.getElementById('cpStatus').style.color = '#FF4B4B';
+            }
+        }
+
         // Verify YouTube
         async function verifyYouTube() {
             const btn = document.getElementById('ytVerifyBtn');
@@ -347,20 +383,15 @@
                     type: type
                 })
             }).then(() => {
-                // Open the checkpoint link with callback
-                const callbackUrl = encodeURIComponent(
-                    `${API_URL}/api/verification/callback?type=${type}&token=${verificationToken}&hwid=${browserHWID}`
-                );
-
                 let url;
                 if (type === 'linkvertise') {
-                    url = `https://link-target.net/4743639/mtHXHs6YNOhN?r=${callbackUrl}`;
+                    url = `https://linkvertise.com/access/4743639/mtHXHs6YNOhN`;
                 } else {
-                    url = `https://lootdest.org/s?pAOGB5Mu&r=${callbackUrl}`;
+                    url = `https://lootdest.org/s?pAOGB5Mu`;
                 }
 
                 window.open(url, '_blank');
-                document.getElementById('cpStatus').innerHTML = 'Waiting for verification... <span class="loading-spinner"></span>';
+                document.getElementById('cpStatus').innerHTML = 'Complete the task in the new tab. You will be redirected back automatically... <span class="loading-spinner"></span>';
                 document.getElementById('cpStatus').style.color = '#FF3B3B';
             });
         }
@@ -437,6 +468,15 @@
 
             if (num === 3) {
                 document.getElementById('claimBtn').disabled = false;
+            }
+
+            // Show checkpoint verify button after 15 seconds
+            if (num === 2) {
+                setTimeout(() => {
+                    if (!cpVerified) {
+                        document.getElementById('cpVerifyBtn').style.display = 'inline-block';
+                    }
+                }, 15000);
             }
         }
 

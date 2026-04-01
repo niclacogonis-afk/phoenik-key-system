@@ -407,6 +407,40 @@ app.post('/api/verification/verify-youtube', async (req, res) => {
     }
 });
 
+// Verify checkpoint (manual verification with anti-abuse)
+app.post('/api/verification/verify-checkpoint', async (req, res) => {
+    try {
+        const { hwid } = req.body;
+        if (!hwid) return res.json({ success: false, message: 'Missing HWID' });
+
+        const verification = await PendingVerification.findOne({ hwid });
+        if (!verification) return res.json({ success: false, message: 'Please reload the page and try again' });
+
+        if (verification.cpCompleted) return res.json({ success: true });
+
+        // Anti-abuse: require at least 12 seconds since YouTube verification
+        if (!verification.ytCompleted) {
+            return res.json({ success: false, message: 'Complete YouTube step first' });
+        }
+
+        const timeSinceYt = Date.now() - verification.updatedAt.getTime();
+        if (timeSinceYt < 12000) {
+            return res.json({
+                success: false,
+                message: `Please wait ${Math.ceil((12000 - timeSinceYt) / 1000)} more seconds`
+            });
+        }
+
+        verification.cpCompleted = true;
+        verification.cpCompletedAt = new Date();
+        await verification.save();
+
+        return res.json({ success: true });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 // Claim key after all verifications
 app.post('/api/verification/claim-key', async (req, res) => {
     try {
