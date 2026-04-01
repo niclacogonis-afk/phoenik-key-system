@@ -17,8 +17,9 @@
         }
         .container {
             text-align: center;
-            max-width: 500px;
+            max-width: 520px;
             padding: 40px;
+            width: 100%;
         }
         .logo {
             font-size: 32px;
@@ -32,54 +33,66 @@
             font-size: 14px;
             margin-bottom: 40px;
         }
-        .step-container { margin-bottom: 30px; }
         .step {
             background: #0F0F15;
             border: 1px solid #1E1E26;
             border-radius: 14px;
-            padding: 24px;
-            margin-bottom: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
             text-align: left;
             transition: all 0.3s;
+            opacity: 0.5;
+            pointer-events: none;
         }
-        .step.completed { border-color: #00ff88; }
-        .step.active { border-color: #FF3B3B; }
+        .step.locked { opacity: 0.4; }
+        .step.active {
+            opacity: 1;
+            border-color: #FF3B3B;
+            pointer-events: auto;
+        }
+        .step.completed {
+            opacity: 1;
+            border-color: #00ff88;
+            pointer-events: none;
+        }
         .step-header {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .step-number {
+        .step-icon {
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background: #1a1a24;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: #666;
+            font-size: 14px;
+            flex-shrink: 0;
         }
-        .step.completed .step-number { background: #0D3322; color: #00ff88; }
-        .step.active .step-number { background: #331515; color: #FF3B3B; }
-        .step-title { color: #fff; font-size: 15px; font-weight: 600; }
-        .step-desc { color: #666; font-size: 12px; margin-left: 40px; }
+        .step.locked .step-icon { background: #1a1a24; color: #444; }
+        .step.active .step-icon { background: #331515; color: #FF3B3B; }
+        .step.completed .step-icon { background: #0D3322; color: #00ff88; }
+        .step-title { color: #fff; font-size: 14px; font-weight: 600; }
+        .step-desc { color: #666; font-size: 12px; margin-left: 40px; margin-top: 4px; }
         .btn {
             display: inline-block;
-            padding: 12px 28px;
+            padding: 10px 22px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             text-decoration: none;
             transition: all 0.2s;
             margin-top: 10px;
+            margin-left: 40px;
         }
         .btn-primary { background: #FF3B3B; color: #fff; }
         .btn-primary:hover { background: #e03030; }
+        .btn-lootlabs { background: #7c3aed; color: #fff; }
+        .btn-lootlabs:hover { background: #6d2ed4; }
         .btn-success { background: #00ff88; color: #050507; }
         .btn-success:hover { background: #00e07a; }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -90,7 +103,7 @@
             padding: 20px;
             margin-top: 20px;
             font-family: 'Consolas', monospace;
-            font-size: 18px;
+            font-size: 16px;
             color: #00ff88;
             letter-spacing: 2px;
             word-break: break-all;
@@ -109,14 +122,30 @@
         .copy-btn:hover { background: #0D3322; }
         .error { color: #FF4B4B; font-size: 13px; margin-top: 10px; }
         .timer { color: #666; font-size: 12px; margin-top: 8px; }
-        .checkmark { color: #00ff88; }
-        .linkvertise-btn, .lootlabs-btn {
-            display: block;
-            width: 100%;
-            margin-top: 8px;
+        .status-bar {
+            background: #0A0A0E;
+            border: 1px solid #1E1E26;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-top: 16px;
+            font-size: 12px;
+            color: #666;
         }
-        .linkvertise-btn { background: #f5a623; color: #000; }
-        .lootlabs-btn { background: #7c3aed; color: #fff; }
+        .status-bar .check { color: #00ff88; }
+        .status-bar .pending { color: #FF3B3B; }
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #1E1E26;
+            border-top: 2px solid #FF3B3B;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -124,44 +153,54 @@
         <div class="logo">PHOENIK</div>
         <div class="subtitle">Complete all steps to get your free 24h key</div>
 
-        <div class="step-container">
-            <div class="step active" id="step1">
-                <div class="step-header">
-                    <div class="step-number">1</div>
-                    <div class="step-title">Like our YouTube video</div>
-                </div>
-                <div class="step-desc">Subscribe and like our latest video to support the project</div>
-                <a href="https://www.youtube.com/@PhoenikExecutor?sub_confirmation=1" target="_blank" class="btn btn-primary" style="margin-left:40px" onclick="completeStep(1)">
-                    Open YouTube
+        <div class="status-bar" id="statusBar">
+            <span id="statusText">Initializing verification...</span>
+        </div>
+
+        <!-- Step 1: YouTube -->
+        <div class="step active" id="step1">
+            <div class="step-header">
+                <div class="step-icon" id="step1Icon">1</div>
+                <div class="step-title">Subscribe & Like on YouTube</div>
+            </div>
+            <div class="step-desc">Subscribe to our channel and like the pinned video</div>
+            <a href="https://www.youtube.com/@PhoenikExecutor?sub_confirmation=1" target="_blank" class="btn btn-primary" id="ytBtn">
+                Open YouTube
+            </a>
+            <button class="btn btn-primary" id="ytVerifyBtn" onclick="verifyYouTube()" style="display:none">
+                I Subscribed - Verify
+            </button>
+            <div class="step-desc" id="ytTimer" style="color:#FF3B3B;margin-top:6px"></div>
+        </div>
+
+        <!-- Step 2: Checkpoint -->
+        <div class="step locked" id="step2">
+            <div class="step-header">
+                <div class="step-icon" id="step2Icon">2</div>
+                <div class="step-title">Complete Checkpoint</div>
+            </div>
+            <div class="step-desc">Complete one of the following to continue</div>
+            <div style="margin-top:8px">
+                <a href="#" target="_blank" class="btn btn-primary" id="linkvertiseBtn" onclick="startCheckpoint('linkvertise')">
+                    Linkvertise
+                </a>
+                <a href="#" target="_blank" class="btn btn-lootlabs" id="lootlabsBtn" onclick="startCheckpoint('lootlabs')">
+                    LootLabs
                 </a>
             </div>
+            <div class="step-desc" id="cpStatus" style="margin-top:6px"></div>
+        </div>
 
-            <div class="step" id="step2">
-                <div class="step-header">
-                    <div class="step-number">2</div>
-                    <div class="step-title">Complete checkpoint</div>
-                </div>
-                <div class="step-desc">Choose one of the following to continue</div>
-                <div style="margin-left:40px;margin-top:8px">
-                    <a href="https://linkvertise.com" target="_blank" class="btn linkvertise-btn" onclick="completeStep(2)">
-                        Linkvertise
-                    </a>
-                    <a href="https://lootlabs.com" target="_blank" class="btn lootlabs-btn" onclick="completeStep(2)">
-                        LootLabs
-                    </a>
-                </div>
+        <!-- Step 3: Get Key -->
+        <div class="step locked" id="step3">
+            <div class="step-header">
+                <div class="step-icon" id="step3Icon">3</div>
+                <div class="step-title">Claim Your Key</div>
             </div>
-
-            <div class="step" id="step3">
-                <div class="step-header">
-                    <div class="step-number">3</div>
-                    <div class="step-title">Verify & Get Key</div>
-                </div>
-                <div class="step-desc">Click verify to prove you completed all steps</div>
-                <button class="btn btn-success" style="margin-left:40px" id="verifyBtn" disabled onclick="verifyAndGetKey()">
-                    Verify & Get Key
-                </button>
-            </div>
+            <div class="step-desc">All steps completed - claim your key</div>
+            <button class="btn btn-success" id="claimBtn" onclick="claimKey()" disabled>
+                Claim Key
+            </button>
         </div>
 
         <div class="key-display" id="keyDisplay">
@@ -174,37 +213,229 @@
     </div>
 
     <script>
-        let completedSteps = new Set();
         const API_URL = window.location.origin;
+        let browserHWID = '';
+        let verificationToken = '';
+        let ytVerified = false;
+        let cpVerified = false;
+        let pollInterval = null;
 
-        function completeStep(num) {
-            completedSteps.add(num);
-            document.getElementById('step' + num).classList.remove('active');
-            document.getElementById('step' + num).classList.add('completed');
+        // Generate browser HWID
+        async function generateHWID() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillText('phoenik', 2, 2);
 
-            // Activate next step
-            if (num < 3) {
-                document.getElementById('step' + (num + 1)).classList.add('active');
+            const data = [
+                navigator.userAgent,
+                navigator.language,
+                screen.width + 'x' + screen.height,
+                screen.colorDepth,
+                new Date().getTimezoneOffset(),
+                canvas.toDataURL(),
+                navigator.hardwareConcurrency || 0,
+                navigator.platform
+            ].join('|');
+
+            const encoder = new TextEncoder();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+        }
+
+        // Initialize
+        async function init() {
+            browserHWID = await generateHWID();
+
+            // Check if already verified
+            try {
+                const res = await fetch(`${API_URL}/api/verification/status?hwid=${browserHWID}`);
+                const data = await res.json();
+
+                if (data.ytCompleted) {
+                    markStepComplete(1);
+                    ytVerified = true;
+                }
+                if (data.cpCompleted) {
+                    markStepComplete(2);
+                    cpVerified = true;
+                }
+                if (data.hasKey) {
+                    showKey(data.key);
+                    return;
+                }
+
+                updateStatus();
+            } catch (e) {
+                document.getElementById('statusText').textContent = 'Error connecting to server';
             }
 
-            // Enable verify button if all steps done
-            if (completedSteps.size >= 2) { // step 1 + step 2
-                document.getElementById('verifyBtn').disabled = false;
+            // Show YouTube verify button after 10 seconds
+            setTimeout(() => {
+                if (!ytVerified) {
+                    document.getElementById('ytBtn').style.display = 'none';
+                    document.getElementById('ytVerifyBtn').style.display = 'inline-block';
+                }
+            }, 10000);
+
+            // Start polling
+            pollInterval = setInterval(pollStatus, 3000);
+        }
+
+        function updateStatus() {
+            const checks = [
+                ytVerified ? '<span class="check">[OK]</span> YouTube' : '<span class="pending">[  ]</span> YouTube',
+                cpVerified ? '<span class="check">[OK]</span> Checkpoint' : '<span class="pending">[  ]</span> Checkpoint'
+            ];
+            document.getElementById('statusBar').innerHTML = checks.join(' &nbsp;&nbsp; ');
+        }
+
+        // Verify YouTube
+        async function verifyYouTube() {
+            const btn = document.getElementById('ytVerifyBtn');
+            btn.textContent = 'Verifying...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/api/verification/verify-youtube`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hwid: browserHWID })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    ytVerified = true;
+                    markStepComplete(1);
+                    activateStep(2);
+                    updateStatus();
+                } else {
+                    btn.textContent = 'I Subscribed - Verify';
+                    btn.disabled = false;
+                    document.getElementById('ytTimer').textContent = data.message || 'Verification failed';
+                }
+            } catch (e) {
+                btn.textContent = 'I Subscribed - Verify';
+                btn.disabled = false;
+                document.getElementById('ytTimer').textContent = 'Connection error';
             }
         }
 
-        async function verifyAndGetKey() {
-            const btn = document.getElementById('verifyBtn');
+        // Start checkpoint
+        function startCheckpoint(type) {
+            // Generate a unique verification token
+            verificationToken = generateToken();
+
+            // Register the pending verification
+            fetch(`${API_URL}/api/verification/start-checkpoint`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    hwid: browserHWID,
+                    token: verificationToken,
+                    type: type
+                })
+            }).then(() => {
+                // Open the checkpoint link with callback
+                const callbackUrl = encodeURIComponent(
+                    `${API_URL}/api/verification/callback?type=${type}&token=${verificationToken}&hwid=${browserHWID}`
+                );
+
+                let url;
+                if (type === 'linkvertise') {
+                    url = `https://link-target.net/4743639/mtHXHs6YNOhN?r=${callbackUrl}`;
+                } else {
+                    url = `https://lootdest.org/s?pAOGB5Mu&r=${callbackUrl}`;
+                }
+
+                window.open(url, '_blank');
+                document.getElementById('cpStatus').innerHTML = 'Waiting for verification... <span class="loading-spinner"></span>';
+                document.getElementById('cpStatus').style.color = '#FF3B3B';
+            });
+        }
+
+        // Poll status
+        async function pollStatus() {
+            try {
+                const res = await fetch(`${API_URL}/api/verification/status?hwid=${browserHWID}`);
+                const data = await res.json();
+
+                if (data.ytCompleted && !ytVerified) {
+                    ytVerified = true;
+                    markStepComplete(1);
+                    activateStep(2);
+                    updateStatus();
+                }
+
+                if (data.cpCompleted && !cpVerified) {
+                    cpVerified = true;
+                    markStepComplete(2);
+                    activateStep(3);
+                    updateStatus();
+                    document.getElementById('cpStatus').innerHTML = '<span style="color:#00ff88">Checkpoint completed!</span>';
+                }
+
+                if (data.hasKey) {
+                    showKey(data.key);
+                    clearInterval(pollInterval);
+                }
+            } catch (e) {}
+        }
+
+        // Claim key
+        async function claimKey() {
+            const btn = document.getElementById('claimBtn');
             btn.textContent = 'Generating...';
             btn.disabled = true;
 
-            // In production, you would generate a key server-side
-            // For now, show a message to use the executor
-            setTimeout(() => {
-                document.getElementById('keyDisplay').style.display = 'block';
-                document.getElementById('keyCode').textContent = 'Use the executor to validate your key. Paste it in the key system.';
-                btn.textContent = 'Done!';
-            }, 1500);
+            try {
+                const res = await fetch(`${API_URL}/api/verification/claim-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hwid: browserHWID })
+                });
+                const data = await res.json();
+
+                if (data.key) {
+                    showKey(data.key);
+                    clearInterval(pollInterval);
+                } else {
+                    btn.textContent = 'Claim Key';
+                    btn.disabled = false;
+                    document.getElementById('errorMsg').textContent = data.message || 'Failed to generate key';
+                }
+            } catch (e) {
+                btn.textContent = 'Claim Key';
+                btn.disabled = false;
+                document.getElementById('errorMsg').textContent = 'Connection error';
+            }
+        }
+
+        // Helpers
+        function markStepComplete(num) {
+            const step = document.getElementById('step' + num);
+            step.classList.remove('active', 'locked');
+            step.classList.add('completed');
+            document.getElementById('step' + num + 'Icon').textContent = '✓';
+        }
+
+        function activateStep(num) {
+            const step = document.getElementById('step' + num);
+            step.classList.remove('locked');
+            step.classList.add('active');
+
+            if (num === 3) {
+                document.getElementById('claimBtn').disabled = false;
+            }
+        }
+
+        function showKey(key) {
+            document.getElementById('keyDisplay').style.display = 'block';
+            document.getElementById('keyCode').textContent = key;
+            markStepComplete(3);
+            clearInterval(pollInterval);
         }
 
         function copyKey() {
@@ -213,6 +444,15 @@
             document.querySelector('.copy-btn').textContent = 'Copied!';
             setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy Key', 2000);
         }
+
+        function generateToken() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let token = '';
+            for (let i = 0; i < 32; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
+            return token;
+        }
+
+        init();
     </script>
 </body>
 </html>

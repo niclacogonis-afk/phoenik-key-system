@@ -37,6 +37,7 @@ const validateLimiter = rateLimit({
 // === MODELS ===
 const Key = require('./models/Key');
 const User = require('./models/User');
+const PendingVerification = require('./models/PendingVerification');
 
 // === AUTH MIDDLEWARE ===
 function authMiddleware(req, res, next) {
@@ -260,7 +261,176 @@ app.get('/api/admin/stats', authMiddleware, async (req, res) => {
 
 // Get Key redirect (for the "Get Key" button)
 app.get('/getkey', (req, res) => {
-    res.redirect('https://link-to-your-linkvertise-or-lootlabs.com');
+    res.redirect('/getkey.html');
+});
+
+// === VERIFICATION ROUTES ===
+
+// Check verification status
+app.get('/api/verification/status', async (req, res) => {
+    try {
+        const { hwid } = req.query;
+        if (!hwid) return res.json({ ytCompleted: false, cpCompleted: false, hasKey: false });
+
+        const verification = await PendingVerification.findOne({ hwid });
+        if (!verification) return res.json({ ytCompleted: false, cpCompleted: false, hasKey: false });
+
+        return res.json({
+            ytCompleted: verification.ytCompleted,
+            cpCompleted: verification.cpCompleted,
+            hasKey: verification.keyIssued,
+            key: verification.issuedKey
+        });
+    } catch (err) {
+        return res.json({ ytCompleted: false, cpCompleted: false, hasKey: false });
+    }
+});
+
+// Start checkpoint verification
+app.post('/api/verification/start-checkpoint', async (req, res) => {
+    try {
+        const { hwid, token, type } = req.body;
+        if (!hwid || !token || !type) return res.status(400).json({ error: 'Missing data' });
+
+        let verification = await PendingVerification.findOne({ hwid });
+
+        if (!verification) {
+            verification = new PendingVerification({
+                hwid,
+                token,
+                type,
+                ip: req.ip
+            });
+        } else {
+            verification.token = token;
+            verification.type = type;
+            verification.ip = req.ip;
+            verification.cpCompleted = false;
+        }
+
+        await verification.save();
+        return res.json({ success: true, token });
+    } catch (err) {
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Callback from Linkvertise/LootLabs
+app.get('/api/verification/callback', async (req, res) => {
+    try {
+        const { token, hwid, type } = req.query;
+        if (!token || !hwid) return res.status(400).send('Invalid callback');
+
+        const verification = await PendingVerification.findOne({ hwid, token });
+        if (!verification) return res.status(404).send('Verification not found');
+
+        // Mark checkpoint as completed
+        verification.cpCompleted = true;
+        verification.cpCompletedAt = new Date();
+        await verification.save();
+
+        // Redirect back to getkey page
+        res.redirect('/getkey.html?verified=checkpoint');
+    } catch (err) {
+        res.status(500).send('Server error');
+    }
+});
+
+// Verify YouTube (with anti-abuse)
+app.post('/api/verification/verify-youtube', async (req, res) => {
+    try {
+        const { hwid } = req.body;
+        if (!hwid) return res.json({ success: false, message: 'Missing HWID' });
+
+        let verification = await PendingVerification.findOne({ hwid });
+
+        if (!verification) {
+            verification = new PendingVerification({
+                hwid,
+                token: generateKey('TKN'),
+                type: 'linkvertise',
+                ip: req.ip
+            });
+        }
+
+        // Anti-abuse: require at least 8 seconds since page load
+        const timeSinceStart = Date.now() - verification.ytStartedAt.getTime();
+        if (timeSinceStart < 8000) {
+            return res.json({
+                success: false,
+                message: `Please wait ${Math.ceil((8000 - timeSinceStart) / 1000)} more seconds`
+            });
+        }
+
+        // Anti-abuse: check if same HWID already got a key today
+        const existingKey = await Key.findOne({
+            hwid: hwid,
+            createdAt: { $gt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        });
+        if (existingKey) {
+            return res.json({
+                success: false,
+                message: 'You already have an active key. Wait for it to expire.'
+            });
+        }
+
+        verification.ytCompleted = true;
+        await verification.save();
+
+        return res.json({ success: true });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Claim key after all verifications
+app.post('/api/verification/claim-key', async (req, res) => {
+    try {
+        const { hwid } = req.body;
+        if (!hwid) return res.json({ success: false, message: 'Missing HWID' });
+
+        const verification = await PendingVerification.findOne({ hwid });
+        if (!verification) return res.json({ success: false, message: 'No verification found' });
+
+        if (!verification.ytCompleted) return res.json({ success: false, message: 'YouTube not verified' });
+        if (!verification.cpCompleted) return res.json({ success: false, message: 'Checkpoint not completed' });
+
+        // Anti-abuse: check if same HWID already has an active key
+        const existingKey = await Key.findOne({
+            hwid: hwid,
+            expiry: { $gt: Date.now() },
+            revoked: false
+        });
+        if (existingKey) {
+            verification.keyIssued = true;
+            verification.issuedKey = existingKey.key;
+            await verification.save();
+            return res.json({ success: true, key: existingKey.key, message: 'You already have an active key' });
+        }
+
+        // Generate key
+        const keyValue = generateKey('PHOENIK');
+        const expiry = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+
+        const key = new Key({
+            key: keyValue,
+            type: 'free',
+            expiry,
+            duration: 24,
+            hwid,
+            createdBy: 'getkey-page',
+            boundAt: new Date()
+        });
+        await key.save();
+
+        verification.keyIssued = true;
+        verification.issuedKey = keyValue;
+        await verification.save();
+
+        return res.json({ success: true, key: keyValue });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
 });
 
 // === HELPER ===
