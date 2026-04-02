@@ -1,506 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phoenik Executor - Get Key</title>
+    <title>Phoenik Executor - Get Your Free Key</title>
     <style>
+        :root[data-theme="dark"] {
+            --bg: #050507; --bg2: #0F0F15; --bg3: #0A0A0E;
+            --text: #E5E7EB; --muted: #666; --accent: #FF3B3B;
+            --success: #00ff88; --border: #1E1E26; --card: #0F0F15;
+        }
+        :root[data-theme="light"] {
+            --bg: #f5f5f7; --bg2: #ffffff; --bg3: #f0f0f2;
+            --text: #1a1a2e; --muted: #888; --accent: #FF3B3B;
+            --success: #00cc6a; --border: #e0e0e5; --card: #ffffff;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Inter, sans-serif;
-            background: #050507;
-            color: #E5E7EB;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            text-align: center;
-            max-width: 520px;
-            padding: 40px;
-            width: 100%;
-        }
-        .logo {
-            font-size: 32px;
-            font-weight: 900;
-            color: #fff;
-            letter-spacing: 4px;
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 40px;
-        }
-        .step {
-            background: #0F0F15;
-            border: 1px solid #1E1E26;
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 12px;
-            text-align: left;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
             transition: all 0.3s;
-            opacity: 0.5;
-            pointer-events: none;
         }
+        .container { text-align: center; max-width: 520px; padding: 40px; width: 100%; }
+        .theme-toggle, .lang-toggle {
+            position: fixed; top: 20px; background: var(--bg2);
+            border: 1px solid var(--border); border-radius: 20px;
+            padding: 8px 16px; color: var(--text); cursor: pointer; font-size: 14px;
+        }
+        .theme-toggle { right: 20px; }
+        .lang-toggle { right: 120px; font-size: 13px; padding: 8px 12px; }
+        .theme-toggle:hover, .lang-toggle:hover { border-color: var(--accent); }
+        .logo { font-size: 36px; font-weight: 900; color: var(--text); letter-spacing: 4px; margin-bottom: 8px; }
+        .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+        .stats-bar { display: flex; justify-content: center; gap: 30px; margin: 20px 0 30px; }
+        .stat-value { font-size: 20px; font-weight: 800; color: var(--accent); }
+        .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+        .countdown-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+        .countdown-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+        .countdown-timer { font-size: 28px; font-weight: 800; font-family: 'Consolas', monospace; color: var(--text); }
+        .step { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 12px; text-align: left; opacity: 0.4; pointer-events: none; transition: all 0.3s; }
+        .step.active { opacity: 1; border-color: var(--accent); pointer-events: auto; }
+        .step.completed { opacity: 1; border-color: var(--success); pointer-events: none; }
         .step.locked { opacity: 0.4; }
-        .step.active {
-            opacity: 1;
-            border-color: #FF3B3B;
-            pointer-events: auto;
-        }
-        .step.completed {
-            opacity: 1;
-            border-color: #00ff88;
-            pointer-events: none;
-        }
-        .step-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-        .step-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
+        .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .step-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+        .step.active .step-icon { background: #331515; color: var(--accent); }
+        .step.completed .step-icon { background: #0D3322; color: var(--success); }
         .step.locked .step-icon { background: #1a1a24; color: #444; }
-        .step.active .step-icon { background: #331515; color: #FF3B3B; }
-        .step.completed .step-icon { background: #0D3322; color: #00ff88; }
-        .step-title { color: #fff; font-size: 14px; font-weight: 600; }
-        .step-desc { color: #666; font-size: 12px; margin-left: 40px; margin-top: 4px; }
-        .btn {
-            display: inline-block;
-            padding: 10px 22px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            margin-top: 10px;
-            margin-left: 40px;
-        }
-        .btn-primary { background: #FF3B3B; color: #fff; }
-        .btn-primary:hover { background: #e03030; }
-        .btn-lootlabs { background: #7c3aed; color: #fff; }
-        .btn-lootlabs:hover { background: #6d2ed4; }
-        .btn-success { background: #00ff88; color: #050507; }
-        .btn-success:hover { background: #00e07a; }
+        .step-title { color: var(--text); font-size: 14px; font-weight: 600; }
+        .step-desc { color: var(--muted); font-size: 12px; margin-left: 40px; margin-top: 4px; }
+        .btn { display: inline-block; padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; transition: all 0.2s; margin-top: 10px; margin-left: 40px; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-success { background: var(--success); color: #050507; }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .key-display {
-            background: #0A0A0E;
-            border: 1px solid #00ff88;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            font-family: 'Consolas', monospace;
-            font-size: 16px;
-            color: #00ff88;
-            letter-spacing: 2px;
-            word-break: break-all;
-            display: none;
-        }
-        .copy-btn {
-            margin-top: 12px;
-            background: transparent;
-            border: 1px solid #00ff88;
-            color: #00ff88;
-            padding: 8px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-        }
+        .key-display { background: var(--bg3); border: 1px solid var(--success); border-radius: 10px; padding: 20px; margin-top: 20px; font-family: 'Consolas', monospace; font-size: 16px; color: var(--success); letter-spacing: 2px; word-break: break-all; display: none; }
+        .copy-btn { margin-top: 12px; background: transparent; border: 1px solid var(--success); color: var(--success); padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; }
         .copy-btn:hover { background: #0D3322; }
-        .error { color: #FF4B4B; font-size: 13px; margin-top: 10px; }
-        .timer { color: #666; font-size: 12px; margin-top: 8px; }
-        .status-bar {
-            background: #0A0A0E;
-            border: 1px solid #1E1E26;
-            border-radius: 8px;
-            padding: 10px 16px;
-            margin-top: 16px;
-            font-size: 12px;
-            color: #666;
-        }
-        .status-bar .check { color: #00ff88; }
-        .status-bar .pending { color: #FF3B3B; }
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #1E1E26;
-            border-top: 2px solid #FF3B3B;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            vertical-align: middle;
-            margin-left: 8px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .hidden { display: none !important; }
+        .status-bar { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; margin-top: 16px; font-size: 12px; color: var(--muted); }
+        .status-bar .check { color: var(--success); }
+        .status-bar .pending { color: var(--accent); }
+        .buy-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-top: 20px; text-align: left; }
+        .buy-section h3 { color: var(--text); margin-bottom: 12px; font-size: 16px; }
+        .buy-option { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .buy-option:last-child { border-bottom: none; }
+        .buy-option-name { color: var(--text); font-weight: 600; font-size: 14px; }
+        .buy-option-desc { color: var(--muted); font-size: 12px; }
+        .buy-option-price { color: var(--accent); font-weight: 700; font-size: 16px; }
+        .buy-btn { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; margin-left: 10px; }
     </style>
 </head>
 <body>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+    <button class="lang-toggle" onclick="toggleLang()">IT/EN</button>
     <div class="container">
         <div class="logo">PHOENIK</div>
-        <div class="subtitle">Complete all steps to get your free 24h key</div>
-
-        <div class="status-bar" id="statusBar">
-            <span id="statusText">Initializing verification...</span>
+        <div class="subtitle" id="subtitle">Complete all steps to get your free 24h key</div>
+        <div class="stats-bar">
+            <div class="stat"><div class="stat-value" id="totalKeys">10,247</div><div class="stat-label" id="lblKeys">Keys Given</div></div>
+            <div class="stat"><div class="stat-value" id="activeUsers">1,832</div><div class="stat-label" id="lblUsers">Active Users</div></div>
+            <div class="stat"><div class="stat-value">24/7</div><div class="stat-label" id="lblOnline">Online</div></div>
         </div>
+        <div class="countdown-box">
+            <div class="countdown-label" id="countdownLabel">Next free key available in</div>
+            <div class="countdown-timer" id="countdownTimer">23:45:12</div>
+        </div>
+        <div class="status-bar" id="statusBar"><span id="statusText">Loading...</span></div>
 
-        <!-- Step 1: YouTube -->
         <div class="step active" id="step1">
-            <div class="step-header">
-                <div class="step-icon" id="step1Icon">1</div>
-                <div class="step-title">Subscribe & Like on YouTube</div>
-            </div>
-            <div class="step-desc">Subscribe to our channel and like the pinned video</div>
-            <a href="https://www.youtube.com/@PhoenikExecutor?sub_confirmation=1" target="_blank" class="btn btn-primary" id="ytBtn">
-                Open YouTube
-            </a>
-            <button class="btn btn-primary" id="ytVerifyBtn" onclick="verifyYouTube()" style="display:none">
-                I Subscribed - Verify
-            </button>
-            <div class="step-desc" id="ytTimer" style="color:#FF3B3B;margin-top:6px"></div>
+            <div class="step-header"><div class="step-icon" id="step1Icon">1</div><div class="step-title" id="step1Title">Subscribe & Like on YouTube</div></div>
+            <div class="step-desc" id="step1Desc">Subscribe to our channel and like the pinned video</div>
+            <a href="https://www.youtube.com/@PhoenikExecutor?sub_confirmation=1" target="_blank" class="btn btn-primary" id="ytBtn">Open YouTube</a>
+            <button class="btn btn-primary" id="ytVerifyBtn" onclick="verifyYouTube()" style="display:none">I Subscribed - Verify</button>
         </div>
 
-        <!-- Step 2: Checkpoint -->
         <div class="step locked" id="step2">
-            <div class="step-header">
-                <div class="step-icon" id="step2Icon">2</div>
-                <div class="step-title">Complete Checkpoint</div>
-            </div>
-            <div class="step-desc">Complete one of the following to continue</div>
+            <div class="step-header"><div class="step-icon" id="step2Icon">2</div><div class="step-title" id="step2Title">Complete Checkpoint</div></div>
+            <div class="step-desc" id="step2Desc">Complete one of the following to continue</div>
             <div style="margin-top:8px">
-                <a href="https://linkvertise.com/access/4743639/mtHXHs6YNOhN" target="_blank" class="btn btn-primary" id="linkvertiseBtn">
-                    Linkvertise
-                </a>
-                <a href="https://lootdest.org/s?pAOGB5Mu" target="_blank" class="btn btn-lootlabs" id="lootlabsBtn">
-                    LootLabs
-                </a>
+                <a href="https://linkvertise.com/access/4743639/mtHXHs6YNOhN" target="_blank" class="btn btn-primary">Linkvertise</a>
+                <a href="https://lootdest.org/s?pAOGB5Mu" target="_blank" class="btn" style="background:#7c3aed;color:#fff">LootLabs</a>
             </div>
-            <button class="btn btn-primary" id="cpVerifyBtn" onclick="verifyCheckpoint()" style="display:none;margin-left:40px;margin-top:8px">
-                I Completed - Verify
-            </button>
-            <div class="step-desc" id="cpStatus" style="margin-top:6px"></div>
+            <button class="btn btn-primary" id="cpVerifyBtn" onclick="verifyCheckpoint()" style="display:none;margin-left:40px;margin-top:8px">I Completed - Verify</button>
         </div>
 
-        <!-- Step 3: Get Key -->
         <div class="step locked" id="step3">
-            <div class="step-header">
-                <div class="step-icon" id="step3Icon">3</div>
-                <div class="step-title">Claim Your Key</div>
-            </div>
-            <div class="step-desc">All steps completed - claim your key</div>
-            <button class="btn btn-success" id="claimBtn" onclick="claimKey()" disabled>
-                Claim Key
-            </button>
+            <div class="step-header"><div class="step-icon" id="step3Icon">3</div><div class="step-title" id="step3Title">Claim Your Key</div></div>
+            <div class="step-desc" id="step3Desc">All steps completed - claim your key</div>
+            <button class="btn btn-success" id="claimBtn" onclick="claimKey()" disabled>Claim Key</button>
         </div>
 
         <div class="key-display" id="keyDisplay">
             <div id="keyCode"></div>
             <button class="copy-btn" onclick="copyKey()">Copy Key</button>
-            <div class="timer">Key expires in 24 hours</div>
+            <div id="keyExpires">Key expires in 24 hours</div>
         </div>
 
-        <div class="error" id="errorMsg"></div>
+        <div class="buy-section" id="buySection">
+            <h3>Get Premium Access</h3>
+            <div class="buy-option"><div><div class="buy-option-name">7 Days Premium</div><div class="buy-option-desc">No checkpoints, instant access</div></div><div style="display:flex;align-items:center"><span class="buy-option-price">$2.99</span><button class="buy-btn" onclick="buyPremium('7d')">Buy</button></div></div>
+            <div class="buy-option"><div><div class="buy-option-name">30 Days Premium</div><div class="buy-option-desc">Best value, no checkpoints</div></div><div style="display:flex;align-items:center"><span class="buy-option-price">$7.99</span><button class="buy-btn" onclick="buyPremium('30d')">Buy</button></div></div>
+            <div class="buy-option"><div><div class="buy-option-name">Lifetime Premium</div><div class="buy-option-desc">Never expire, forever access</div></div><div style="display:flex;align-items:center"><span class="buy-option-price">$24.99</span><button class="buy-btn" onclick="buyPremium('lifetime')">Buy</button></div></div>
+        </div>
     </div>
-
     <script>
         const API_URL = window.location.origin;
-        let browserHWID = '';
-        let verificationToken = '';
-        let ytVerified = false;
-        let cpVerified = false;
-        let pollInterval = null;
-
-        // Generate browser HWID
-        async function generateHWID() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.textBaseline = 'top';
-            ctx.font = '14px Arial';
-            ctx.fillText('phoenik', 2, 2);
-
-            const data = [
-                navigator.userAgent,
-                navigator.language,
-                screen.width + 'x' + screen.height,
-                screen.colorDepth,
-                new Date().getTimezoneOffset(),
-                canvas.toDataURL(),
-                navigator.hardwareConcurrency || 0,
-                navigator.platform
-            ].join('|');
-
-            const encoder = new TextEncoder();
-            const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-        }
-
-        // Initialize
-        async function init() {
-            browserHWID = await generateHWID();
-
-            // Create verification record immediately (starts the timer)
-            try {
-                await fetch(`${API_URL}/api/verification/init`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ hwid: browserHWID })
-                });
-            } catch (e) {}
-
-            // Check if already verified
-            try {
-                const res = await fetch(`${API_URL}/api/verification/status?hwid=${browserHWID}`);
-                const data = await res.json();
-
-                if (data.ytCompleted) {
-                    markStepComplete(1);
-                    ytVerified = true;
-                }
-                if (data.cpCompleted) {
-                    markStepComplete(2);
-                    cpVerified = true;
-                }
-                if (data.hasKey) {
-                    showKey(data.key);
-                    return;
-                }
-
-                updateStatus();
-            } catch (e) {
-                document.getElementById('statusText').textContent = 'Error connecting to server';
-            }
-
-            // Show YouTube verify button after 10 seconds
-            setTimeout(() => {
-                if (!ytVerified) {
-                    document.getElementById('ytBtn').style.display = 'none';
-                    document.getElementById('ytVerifyBtn').style.display = 'inline-block';
-                }
-            }, 10000);
-
-            // Start polling
-            pollInterval = setInterval(pollStatus, 3000);
-        }
-
-        function updateStatus() {
-            const checks = [
-                ytVerified ? '<span class="check">[OK]</span> YouTube' : '<span class="pending">[  ]</span> YouTube',
-                cpVerified ? '<span class="check">[OK]</span> Checkpoint' : '<span class="pending">[  ]</span> Checkpoint'
-            ];
-            document.getElementById('statusBar').innerHTML = checks.join(' &nbsp;&nbsp; ');
-        }
-
-        // Verify checkpoint
-        async function verifyCheckpoint() {
-            const btn = document.getElementById('cpVerifyBtn');
-            btn.textContent = 'Verifying...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(`${API_URL}/api/verification/verify-checkpoint`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ hwid: browserHWID })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    cpVerified = true;
-                    markStepComplete(2);
-                    activateStep(3);
-                    updateStatus();
-                } else {
-                    btn.textContent = 'I Completed - Verify';
-                    btn.disabled = false;
-                    document.getElementById('cpStatus').textContent = data.message || 'Verification failed';
-                    document.getElementById('cpStatus').style.color = '#FF4B4B';
-                }
-            } catch (e) {
-                btn.textContent = 'I Completed - Verify';
-                btn.disabled = false;
-                document.getElementById('cpStatus').textContent = 'Connection error';
-                document.getElementById('cpStatus').style.color = '#FF4B4B';
-            }
-        }
-
-        // Verify YouTube
-        async function verifyYouTube() {
-            const btn = document.getElementById('ytVerifyBtn');
-            btn.textContent = 'Verifying...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(`${API_URL}/api/verification/verify-youtube`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ hwid: browserHWID })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    ytVerified = true;
-                    markStepComplete(1);
-                    activateStep(2);
-                    updateStatus();
-                } else {
-                    btn.textContent = 'I Subscribed - Verify';
-                    btn.disabled = false;
-                    document.getElementById('ytTimer').textContent = data.message || 'Verification failed';
-                }
-            } catch (e) {
-                btn.textContent = 'I Subscribed - Verify';
-                btn.disabled = false;
-                document.getElementById('ytTimer').textContent = 'Connection error';
-            }
-        }
-
-        // Start checkpoint
-        function startCheckpoint(type) {
-            // Generate a unique verification token
-            verificationToken = generateToken();
-
-            // Register the pending verification
-            fetch(`${API_URL}/api/verification/start-checkpoint`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    hwid: browserHWID,
-                    token: verificationToken,
-                    type: type
-                })
-            }).then(() => {
-                let url;
-                if (type === 'linkvertise') {
-                    url = `https://linkvertise.com/access/4743639/mtHXHs6YNOhN`;
-                } else {
-                    url = `https://lootdest.org/s?pAOGB5Mu`;
-                }
-
-                window.open(url, '_blank');
-                document.getElementById('cpStatus').innerHTML = 'Complete the task in the new tab. You will be redirected back automatically... <span class="loading-spinner"></span>';
-                document.getElementById('cpStatus').style.color = '#FF3B3B';
-            });
-        }
-
-        // Poll status
-        async function pollStatus() {
-            try {
-                const res = await fetch(`${API_URL}/api/verification/status?hwid=${browserHWID}`);
-                const data = await res.json();
-
-                if (data.ytCompleted && !ytVerified) {
-                    ytVerified = true;
-                    markStepComplete(1);
-                    activateStep(2);
-                    updateStatus();
-                }
-
-                if (data.cpCompleted && !cpVerified) {
-                    cpVerified = true;
-                    markStepComplete(2);
-                    activateStep(3);
-                    updateStatus();
-                    document.getElementById('cpStatus').innerHTML = '<span style="color:#00ff88">Checkpoint completed!</span>';
-                }
-
-                if (data.hasKey) {
-                    showKey(data.key);
-                    clearInterval(pollInterval);
-                }
-            } catch (e) {}
-        }
-
-        // Claim key
-        async function claimKey() {
-            const btn = document.getElementById('claimBtn');
-            btn.textContent = 'Generating...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(`${API_URL}/api/verification/claim-key`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ hwid: browserHWID })
-                });
-                const data = await res.json();
-
-                if (data.key) {
-                    showKey(data.key);
-                    clearInterval(pollInterval);
-                } else {
-                    btn.textContent = 'Claim Key';
-                    btn.disabled = false;
-                    document.getElementById('errorMsg').textContent = data.message || 'Failed to generate key';
-                }
-            } catch (e) {
-                btn.textContent = 'Claim Key';
-                btn.disabled = false;
-                document.getElementById('errorMsg').textContent = 'Connection error';
-            }
-        }
-
-        // Helpers
-        function markStepComplete(num) {
-            const step = document.getElementById('step' + num);
-            step.classList.remove('active', 'locked');
-            step.classList.add('completed');
-            document.getElementById('step' + num + 'Icon').textContent = '✓';
-        }
-
-        function activateStep(num) {
-            const step = document.getElementById('step' + num);
-            step.classList.remove('locked');
-            step.classList.add('active');
-
-            if (num === 3) {
-                document.getElementById('claimBtn').disabled = false;
-            }
-
-            // Show checkpoint verify button after 15 seconds
-            if (num === 2) {
-                setTimeout(() => {
-                    if (!cpVerified) {
-                        document.getElementById('cpVerifyBtn').style.display = 'inline-block';
-                    }
-                }, 15000);
-            }
-        }
-
-        function showKey(key) {
-            document.getElementById('keyDisplay').style.display = 'block';
-            document.getElementById('keyCode').textContent = key;
-            markStepComplete(3);
-            clearInterval(pollInterval);
-        }
-
-        function copyKey() {
-            const text = document.getElementById('keyCode').textContent;
-            navigator.clipboard.writeText(text);
-            document.querySelector('.copy-btn').textContent = 'Copied!';
-            setTimeout(() => document.querySelector('.copy-btn').textContent = 'Copy Key', 2000);
-        }
-
-        function generateToken() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let token = '';
-            for (let i = 0; i < 32; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
-            return token;
-        }
-
+        let browserHWID = '', ytVerified = false, cpVerified = false, pollInterval = null, currentLang = 'en';
+        const langs = {
+            en: { subtitle:'Complete all steps to get your free 24h key', keysGiven:'Keys Given', activeUsers:'Active Users', online:'Online', countdownLabel:'Next free key available in', step1Title:'Subscribe & Like on YouTube', step1Desc:'Subscribe to our channel and like the pinned video', ytBtn:'Open YouTube', ytVerifyBtn:'I Subscribed - Verify', step2Title:'Complete Checkpoint', step2Desc:'Complete one of the following to continue', cpVerifyBtn:'I Completed - Verify', step3Title:'Claim Your Key', step3Desc:'All steps completed - claim your key', claimBtn:'Claim Key', keyExpires:'Key expires in 24 hours', copyBtn:'Copy Key', buyTitle:'Get Premium Access' },
+            it: { subtitle:'Completa tutti i passaggi per ottenere la tua key gratuita 24h', keysGiven:'Key Distribuite', activeUsers:'Utenti Attivi', online:'Online', countdownLabel:'Prossima key gratuita tra', step1Title:'Iscriviti e Metti Mi Piace su YouTube', step1Desc:'Iscriviti al nostro canale e metti mi piace al video in evidenza', ytBtn:'Apri YouTube', ytVerifyBtn:'Mi sono iscritto - Verifica', step2Title:'Completa il Checkpoint', step2Desc:'Completa uno dei seguenti per continuare', cpVerifyBtn:'Ho completato - Verifica', step3Title:'Richiedi la tua Key', step3Desc:'Tutti i passaggi completati - richiedi la key', claimBtn:'Richiedi Key', keyExpires:'La key scade tra 24 ore', copyBtn:'Copia Key', buyTitle:'Ottieni Accesso Premium' }
+        };
+        function toggleTheme() { const h = document.documentElement; h.dataset.theme = h.dataset.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('phoenik-theme', h.dataset.theme); }
+        function toggleLang() { currentLang = currentLang === 'en' ? 'it' : 'en'; localStorage.setItem('phoenik-lang', currentLang); applyLang(); }
+        function applyLang() { const t = langs[currentLang]; for (const k in t) { const el = document.getElementById(k); if (el) el.textContent = t[k]; } }
+        function startCountdown() { const next = new Date(); next.setHours(24,0,0,0); setInterval(() => { const d = next - new Date(); const h = Math.floor(d/36e5), m = Math.floor((d%36e5)/6e4), s = Math.floor((d%6e4)/1e3); document.getElementById('countdownTimer').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }, 1000); }
+        function animateStats() { const e1=document.getElementById('totalKeys'),e2=document.getElementById('activeUsers'); let c1=0,c2=0; const i=setInterval(()=>{ c1+=Math.ceil((10247-c1)/20); c2+=Math.ceil((1832-c2)/20); e1.textContent=c1.toLocaleString(); e2.textContent=c2.toLocaleString(); if(c1>=10247&&c2>=1832)clearInterval(i); },50); }
+        async function generateHWID(){const c=document.createElement('canvas'),x=c.getContext('2d');x.textBaseline='top';x.font='14px Arial';x.fillText('phoenik',2,2);const d=[navigator.userAgent,navigator.language,screen.width+'x'+screen.height,screen.colorDepth,new Date().getTimezoneOffset(),c.toDataURL(),navigator.hardwareConcurrency||0,navigator.platform].join('|');const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(d));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('').substring(0,32);}
+        async function init(){const st=localStorage.getItem('phoenik-theme');if(st)document.documentElement.dataset.theme=st;const sl=localStorage.getItem('phoenik-lang');if(sl)currentLang=sl;applyLang();startCountdown();animateStats();browserHWID=await generateHWID();try{await fetch(`${API_URL}/api/verification/init`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hwid:browserHWID})})}catch(e){}try{const r=await fetch(`${API_URL}/api/verification/status?hwid=${browserHWID}`);const d=await r.json();if(d.ytCompleted){ytVerified=true;markStepComplete(1)}if(d.cpCompleted){cpVerified=true;markStepComplete(2)}if(d.hasKey){showKey(d.key);return}updateStatus()}catch(e){document.getElementById('statusText').textContent='Error connecting to server'}setTimeout(()=>{if(!ytVerified){document.getElementById('ytBtn').style.display='none';document.getElementById('ytVerifyBtn').style.display='inline-block'}},10000);pollInterval=setInterval(pollStatus,3000)}
+        function updateStatus(){document.getElementById('statusBar').innerHTML=[ytVerified?'<span class="check">[OK]</span> YouTube':'<span class="pending">[  ]</span> YouTube',cpVerified?'<span class="check">[OK]</span> Checkpoint':'<span class="pending">[  ]</span> Checkpoint'].join(' &nbsp;&nbsp; ')}
+        async function verifyYouTube(){const b=document.getElementById('ytVerifyBtn');b.textContent='Verifying...';b.disabled=true;try{const r=await fetch(`${API_URL}/api/verification/verify-youtube`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hwid:browserHWID})});const d=await r.json();if(d.success){ytVerified=true;markStepComplete(1);activateStep(2);updateStatus()}else{b.textContent=langs[currentLang].ytVerifyBtn;b.disabled=false}}catch(e){b.textContent=langs[currentLang].ytVerifyBtn;b.disabled=false}}
+        async function verifyCheckpoint(){const b=document.getElementById('cpVerifyBtn');b.textContent='Verifying...';b.disabled=true;try{const r=await fetch(`${API_URL}/api/verification/verify-checkpoint`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hwid:browserHWID})});const d=await r.json();if(d.success){cpVerified=true;markStepComplete(2);activateStep(3);updateStatus()}else{b.textContent=langs[currentLang].cpVerifyBtn;b.disabled=false}}catch(e){b.textContent=langs[currentLang].cpVerifyBtn;b.disabled=false}}
+        async function pollStatus(){try{const r=await fetch(`${API_URL}/api/verification/status?hwid=${browserHWID}`);const d=await r.json();if(d.ytCompleted&&!ytVerified){ytVerified=true;markStepComplete(1);activateStep(2);updateStatus()}if(d.cpCompleted&&!cpVerified){cpVerified=true;markStepComplete(2);activateStep(3);updateStatus()}if(d.hasKey){showKey(d.key);clearInterval(pollInterval)}}catch(e){}}
+        async function claimKey(){const b=document.getElementById('claimBtn');b.textContent='Generating...';b.disabled=true;try{const r=await fetch(`${API_URL}/api/verification/claim-key`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hwid:browserHWID})});const d=await r.json();if(d.key){showKey(d.key);clearInterval(pollInterval)}else{b.textContent=langs[currentLang].claimBtn;b.disabled=false}}catch(e){b.textContent=langs[currentLang].claimBtn;b.disabled=false}}
+        function markStepComplete(n){const s=document.getElementById('step'+n);s.classList.remove('active','locked');s.classList.add('completed');document.getElementById('step'+n+'Icon').textContent='✓'}
+        function activateStep(n){const s=document.getElementById('step'+n);s.classList.remove('locked');s.classList.add('active');if(n===3)document.getElementById('claimBtn').disabled=false;if(n===2)setTimeout(()=>{if(!cpVerified)document.getElementById('cpVerifyBtn').style.display='inline-block'},15000)}
+        function showKey(k){document.getElementById('keyDisplay').style.display='block';document.getElementById('keyCode').textContent=k;markStepComplete(3);clearInterval(pollInterval)}
+        function copyKey(){navigator.clipboard.writeText(document.getElementById('keyCode').textContent);const b=document.querySelector('.copy-btn');b.textContent='Copied!';setTimeout(()=>b.textContent=langs[currentLang].copyBtn,2000)}
+        function buyPremium(p){alert('Payment integration coming soon! Contact us on Discord for now.')}
         init();
     </script>
 </body>
