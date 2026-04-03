@@ -220,15 +220,23 @@ app.post('/api/admin/revoke', authMiddleware, async (req, res) => {
 // Unbind HWID (admin only)
 app.post('/api/admin/unbind', authMiddleware, async (req, res) => {
     try {
-        const { key } = req.body;
+        const { key, type } = req.body;
+        
+        let update;
+        if (type === 'discord') {
+            update = { hwidDiscord: null, boundAtDiscord: null };
+        } else {
+            update = { hwid: null, boundAt: null };
+        }
+
         const result = await Key.findOneAndUpdate(
             { key: key.trim().toUpperCase() },
-            { hwid: null, boundAt: null },
+            update,
             { new: true }
         );
 
         if (!result) return res.status(404).json({ error: 'Key not found' });
-        return res.json({ message: 'HWID unbound', key: result.key });
+        return res.json({ message: `${type === 'discord' ? 'Discord' : 'Executor'} HWID unbound`, key: result.key });
     } catch (err) {
         return res.status(500).json({ error: 'Server error' });
     }

@@ -410,7 +410,7 @@
 
             if (!data.keys) return;
 
-            let html = `<table><thead><tr><th>Key</th><th>Type</th><th>Status</th><th>HWID</th><th>Expires</th><th>Actions</th></tr></thead><tbody>`;
+            let html = `<table><thead><tr><th>Key</th><th>Type</th><th>Status</th><th>HWID (PC)</th><th>HWID (Discord)</th><th>Expires</th><th>Actions</th></tr></thead><tbody>`;
 
             for (const k of data.keys) {
                 const isExpired = Date.now() > k.expiry;
@@ -420,18 +420,21 @@
                 const typeBadge = k.type === 'premium' ? '<span class="badge badge-premium">Premium</span>'
                     : k.type === 'lifetime' ? '<span class="badge badge-lifetime">Lifetime</span>'
                     : '<span class="badge badge-free">Free</span>';
-                const hwid = k.hwid ? k.hwid.substring(0, 12) + '...' : '<span style="color:#444">Unbound</span>';
+                const hwid = k.hwid ? k.hwid.substring(0, 12) + '...' : '<span style="color:#444">None</span>';
+                const hwidDiscord = k.hwidDiscord ? k.hwidDiscord.substring(0, 12) + '...' : '<span style="color:#444">None</span>';
                 const expires = new Date(k.expiry).toLocaleString();
 
                 html += `<tr>
                     <td style="font-family:Consolas;font-size:12px">${k.key}</td>
                     <td>${typeBadge}</td>
                     <td>${statusBadge}</td>
-                    <td style="font-family:Consolas;font-size:11px">${hwid}</td>
+                    <td style="font-family:Consolas;font-size:11px" title="${k.hwid || ''}">${hwid}</td>
+                    <td style="font-family:Consolas;font-size:11px" title="${k.hwidDiscord || ''}">${hwidDiscord}</td>
                     <td style="font-size:12px">${expires}</td>
                     <td class="actions">
                         <button class="btn btn-sm btn-outline" onclick="copyKey('${k.key}')" title="Copy">Copy</button>
-                        ${k.hwid ? `<button class="btn btn-sm btn-blue" onclick="unbindKey('${k.key}')" title="Unbind HWID">Unbind</button>` : ''}
+                        ${k.hwid ? `<button class="btn btn-sm btn-blue" onclick="unbindKey('${k.key}', 'executor')" title="Unbind Executor HWID">Unbind PC</button>` : ''}
+                        ${k.hwidDiscord ? `<button class="btn btn-sm btn-blue" onclick="unbindKey('${k.key}', 'discord')" title="Unbind Discord HWID">Unbind DC</button>` : ''}
                         ${!k.revoked ? `<button class="btn btn-sm btn-danger" onclick="revokeKey('${k.key}')" title="Revoke">Revoke</button>` : ''}
                         <button class="btn btn-sm btn-danger" onclick="deleteKey('${k.key}')" title="Delete">Del</button>
                     </td>
@@ -460,10 +463,11 @@
             loadKeys('all', currentPage);
         }
 
-        async function unbindKey(key) {
-            if (!confirm('Unbind HWID for ' + key + '?')) return;
-            await apiCall('/api/admin/unbind', { method: 'POST', body: JSON.stringify({ key }) });
-            showToast('HWID unbound');
+        async function unbindKey(key, type) {
+            const typeLabel = type === 'discord' ? 'Discord' : 'Executor';
+            if (!confirm(`Unbind ${typeLabel} HWID for ${key}?`)) return;
+            await apiCall('/api/admin/unbind', { method: 'POST', body: JSON.stringify({ key, type }) });
+            showToast(`${typeLabel} HWID unbound`);
             loadKeys('all', currentPage);
         }
 
