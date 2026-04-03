@@ -78,18 +78,19 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
             return res.json({ status: 'expired', message: 'Key has expired' });
         }
 
+        let isValid = false;
+        let messages = [];
+
         // Handle executor HWID binding
         if (hwid) {
             if (!license.hwid) {
                 license.hwid = hwid;
                 license.boundAt = new Date();
-                await license.save();
-                return res.json({ status: 'valid', message: 'Key activated', type: license.type });
-            }
-
-            if (license.hwid !== hwid) {
+                messages.push('PC bound');
+            } else if (license.hwid !== hwid) {
                 return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another PC' });
             }
+            isValid = true;
         }
 
         // Handle Discord HWID binding
@@ -97,21 +98,19 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
             if (!license.hwidDiscord) {
                 license.hwidDiscord = hwidDiscord;
                 license.boundAtDiscord = new Date();
-                await license.save();
-                return res.json({ status: 'valid', message: 'Discord key activated', type: license.type });
-            }
-
-            if (license.hwidDiscord !== hwidDiscord) {
+                messages.push('Discord bound');
+            } else if (license.hwidDiscord !== hwidDiscord) {
                 return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another Discord account' });
             }
+            isValid = true;
         }
 
-        // Key is valid if at least one HWID is set and matches
+        // If neither HWID is set and neither was provided, it's invalid
         if (!license.hwid && !license.hwidDiscord) {
             return res.json({ status: 'invalid', message: 'Key not bound to any device' });
         }
 
-        // Update last used
+        // Update last used and save
         license.lastUsed = new Date();
         await license.save();
 
@@ -121,7 +120,7 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
 
         return res.json({
             status: 'valid',
-            message: `Valid! ${hoursLeft}h ${minutesLeft}m remaining`,
+            message: messages.length > 0 ? messages.join(', ') + '!' : `Valid! ${hoursLeft}h ${minutesLeft}m remaining`,
             type: license.type,
             expiresAt: new Date(license.expiry).toISOString()
         });
