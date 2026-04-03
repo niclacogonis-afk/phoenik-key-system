@@ -58,7 +58,7 @@ function authMiddleware(req, res, next) {
 // Validate key (called by C# client)
 app.post('/api/validate', validateLimiter, async (req, res) => {
     try {
-        const { key } = req.body;
+        const { key, hwid, hwidDiscord } = req.body;
 
         if (!key) {
             return res.json({ status: 'invalid', message: 'Missing key' });
@@ -78,7 +78,43 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
             return res.json({ status: 'expired', message: 'Key has expired' });
         }
 
-        // Key is valid - no HWID check
+        // PC validation
+        if (hwid) {
+            if (license.hwid && license.hwid !== hwid) {
+                // PC doesn't match, check if this is a Discord-only user trying PC for first time
+                if (license.hwidDiscord) {
+                    // There's a Discord HWID - this PC is different user, reject
+                    return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another PC' });
+                }
+                // No Discord HWID - might be a mistake, allow rebind
+                license.hwid = hwid;
+                license.boundAt = new Date();
+            } else if (!license.hwid) {
+                // First PC bind
+                license.hwid = hwid;
+                license.boundAt = new Date();
+            }
+        }
+
+        // Discord validation
+        if (hwidDiscord) {
+            if (license.hwidDiscord && license.hwidDiscord !== hwidDiscord) {
+                // Discord doesn't match, check if this is a PC-only user trying Discord for first time
+                if (license.hwid) {
+                    // There's a PC HWID - this Discord is different user, reject
+                    return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another Discord account' });
+                }
+                // No PC HWID - might be a mistake, allow rebind
+                license.hwidDiscord = hwidDiscord;
+                license.boundAtDiscord = new Date();
+            } else if (!license.hwidDiscord) {
+                // First Discord bind
+                license.hwidDiscord = hwidDiscord;
+                license.boundAtDiscord = new Date();
+            }
+        }
+
+        // Update last used and save
         license.lastUsed = new Date();
         await license.save();
 
@@ -86,9 +122,20 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
         const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
 
+        let message;
+        if (license.hwid && license.hwidDiscord) {
+            message = `Valid on PC & Discord! ${hoursLeft}h ${minutesLeft}m`;
+        } else if (license.hwid) {
+            message = `Valid on PC! ${hoursLeft}h ${minutesLeft}m`;
+        } else if (license.hwidDiscord) {
+            message = `Valid on Discord! ${hoursLeft}h ${minutesLeft}m`;
+        } else {
+            message = `Valid! ${hoursLeft}h ${minutesLeft}m remaining`;
+        }
+
         return res.json({
             status: 'valid',
-            message: `Valid! ${hoursLeft}h ${minutesLeft}m remaining`,
+            message: message,
             type: license.type,
             expiresAt: new Date(license.expiry).toISOString()
         });
