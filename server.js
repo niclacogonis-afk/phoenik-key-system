@@ -58,10 +58,10 @@ function authMiddleware(req, res, next) {
 // Validate key (called by C# client)
 app.post('/api/validate', validateLimiter, async (req, res) => {
     try {
-        const { key, hwid, hwidDiscord } = req.body;
+        const { key } = req.body;
 
-        if (!key || (!hwid && !hwidDiscord)) {
-            return res.json({ status: 'invalid', message: 'Missing key or HWID' });
+        if (!key) {
+            return res.json({ status: 'invalid', message: 'Missing key' });
         }
 
         const license = await Key.findOne({ key: key.trim().toUpperCase() });
@@ -78,39 +78,7 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
             return res.json({ status: 'expired', message: 'Key has expired' });
         }
 
-        let isValid = false;
-        let messages = [];
-
-        // Handle executor HWID binding
-        if (hwid) {
-            if (!license.hwid) {
-                license.hwid = hwid;
-                license.boundAt = new Date();
-                messages.push('PC bound');
-            } else if (license.hwid !== hwid) {
-                return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another PC' });
-            }
-            isValid = true;
-        }
-
-        // Handle Discord HWID binding
-        if (hwidDiscord) {
-            if (!license.hwidDiscord) {
-                license.hwidDiscord = hwidDiscord;
-                license.boundAtDiscord = new Date();
-                messages.push('Discord bound');
-            } else if (license.hwidDiscord !== hwidDiscord) {
-                return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another Discord account' });
-            }
-            isValid = true;
-        }
-
-        // If neither HWID is set and neither was provided, it's invalid
-        if (!license.hwid && !license.hwidDiscord) {
-            return res.json({ status: 'invalid', message: 'Key not bound to any device' });
-        }
-
-        // Update last used and save
+        // Key is valid - no HWID check
         license.lastUsed = new Date();
         await license.save();
 
@@ -120,7 +88,7 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
 
         return res.json({
             status: 'valid',
-            message: messages.length > 0 ? messages.join(', ') + '!' : `Valid! ${hoursLeft}h ${minutesLeft}m remaining`,
+            message: `Valid! ${hoursLeft}h ${minutesLeft}m remaining`,
             type: license.type,
             expiresAt: new Date(license.expiry).toISOString()
         });
