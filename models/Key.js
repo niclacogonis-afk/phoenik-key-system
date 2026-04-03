@@ -25,6 +25,10 @@ const keySchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    hwidDiscord: {
+        type: String,
+        default: null
+    },
     revoked: {
         type: Boolean,
         default: false
@@ -34,6 +38,10 @@ const keySchema = new mongoose.Schema({
         default: 'admin'
     },
     boundAt: {
+        type: Date,
+        default: null
+    },
+    boundAtDiscord: {
         type: Date,
         default: null
     },
@@ -47,6 +55,7 @@ const keySchema = new mongoose.Schema({
 
 keySchema.index({ expiry: 1 });
 keySchema.index({ hwid: 1 });
+keySchema.index({ hwidDiscord: 1 });
 keySchema.index({ revoked: 1 });
 
 module.exports = mongoose.model('Key', keySchema);

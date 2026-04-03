@@ -58,9 +58,9 @@ function authMiddleware(req, res, next) {
 // Validate key (called by C# client)
 app.post('/api/validate', validateLimiter, async (req, res) => {
     try {
-        const { key, hwid } = req.body;
+        const { key, hwid, hwidDiscord } = req.body;
 
-        if (!key || !hwid) {
+        if (!key || (!hwid && !hwidDiscord)) {
             return res.json({ status: 'invalid', message: 'Missing key or HWID' });
         }
 
@@ -78,16 +78,37 @@ app.post('/api/validate', validateLimiter, async (req, res) => {
             return res.json({ status: 'expired', message: 'Key has expired' });
         }
 
-        // HWID binding
-        if (!license.hwid) {
-            license.hwid = hwid;
-            license.boundAt = new Date();
-            await license.save();
-            return res.json({ status: 'valid', message: 'Key activated', type: license.type });
+        // Handle executor HWID binding
+        if (hwid) {
+            if (!license.hwid) {
+                license.hwid = hwid;
+                license.boundAt = new Date();
+                await license.save();
+                return res.json({ status: 'valid', message: 'Key activated', type: license.type });
+            }
+
+            if (license.hwid !== hwid) {
+                return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another PC' });
+            }
         }
 
-        if (license.hwid !== hwid) {
-            return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another PC' });
+        // Handle Discord HWID binding
+        if (hwidDiscord) {
+            if (!license.hwidDiscord) {
+                license.hwidDiscord = hwidDiscord;
+                license.boundAtDiscord = new Date();
+                await license.save();
+                return res.json({ status: 'valid', message: 'Discord key activated', type: license.type });
+            }
+
+            if (license.hwidDiscord !== hwidDiscord) {
+                return res.json({ status: 'hwid_mismatch', message: 'Key is bound to another Discord account' });
+            }
+        }
+
+        // Key is valid if at least one HWID is set and matches
+        if (!license.hwid && !license.hwidDiscord) {
+            return res.json({ status: 'invalid', message: 'Key not bound to any device' });
         }
 
         // Update last used
